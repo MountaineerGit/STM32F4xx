@@ -38,7 +38,7 @@
 //#define BOARD_FLEXI_HAL           // F446 CNC board
 //#define BOARD_STM32F401_UNI       // F401 CNC board
 //#define BOARD_MKS_ROBIN_NANO_30   // F407 based 3D Printer board - untested!
-//#define BOARD_MY_MACHINE          // Add my_machine_map.h before enabling this!
+#define BOARD_MY_MACHINE          // Add my_machine_map.h before enabling this!
 
 // WARNING: BOARD_BTT_SKR_20 may fry your Trinamic drivers due to bad hardware design.
 //          The risk goes away if Q1 (HY1904C2) is shorted between source (S) and drain (D).
@@ -95,8 +95,8 @@
 // of axes can be enabled here.
 //#define X_GANGED            1
 //#define X_AUTO_SQUARE       1
-//#define Y_GANGED            1
-//#define Y_AUTO_SQUARE       1
+#define Y_GANGED            1
+#define Y_AUTO_SQUARE       1
 //#define Z_GANGED            1
 //#define Z_AUTO_SQUARE       1
 // For ganged axes the limit switch input (if available) can be configured to act as a max travel limit switch.
