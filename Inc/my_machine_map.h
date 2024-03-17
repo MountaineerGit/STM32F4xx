@@ -92,8 +92,8 @@
 
 // Define homing/hard limit switch input pins.
 #define LIMIT_PORT              GPIOC
-#define X_LIMIT_PIN             6
-#define Y_LIMIT_PIN             7
+#define X_LIMIT_PIN             8
+#define Y_LIMIT_PIN             6
 #define Z_LIMIT_PIN             9
 #define LIMIT_INMODE            GPIO_BITBAND
 
@@ -105,21 +105,21 @@
 #define M3_DIRECTION_PORT       GPIOA
 #define M3_DIRECTION_PIN        5
 #define M3_LIMIT_PORT           GPIOC
-#define M3_LIMIT_PIN            8
+#define M3_LIMIT_PIN            7
 #define M3_ENABLE_PORT          GPIOB
 #define M3_ENABLE_PIN           15
 #endif
 
   // Define spindle enable and spindle direction output pins.
-#define SPINDLE_ENABLE_PORT     GPIOB
-#define SPINDLE_ENABLE_PIN      3
+#define SPINDLE_ENABLE_PORT     GPIOE
+#define SPINDLE_ENABLE_PIN      2
 #define SPINDLE_DIRECTION_PORT  GPIOB
 #define SPINDLE_DIRECTION_PIN   5
 #define SPINDLE_DIRECTION_BIT   (1<<SPINDLE_DIRECTION_PIN)
 
 // Define spindle PWM output pin.
-#define SPINDLE_PWM_PORT_BASE   GPIOA_BASE
-#define SPINDLE_PWM_PIN         8
+#define SPINDLE_PWM_PORT_BASE   GPIOE_BASE
+#define SPINDLE_PWM_PIN         5
 
 // Define flood and mist coolant enable output pins.
 #define COOLANT_FLOOD_PORT      GPIOE
@@ -128,18 +128,18 @@
 #define COOLANT_MIST_PIN        8
 
 // Define user-control controls (cycle start, reset, feed hold) input pins.
-#define CONTROL_PORT            GPIOC
+#define CONTROL_PORT            GPIOD
 #define RESET_PIN               2
-#define FEED_HOLD_PIN           3
-#define CYCLE_START_PIN         4
+#define FEED_HOLD_PIN           1
+#define CYCLE_START_PIN         0
 #if SAFETY_DOOR_ENABLE
 #define SAFETY_DOOR_PIN         1
 #endif
 #define CONTROL_INMODE          GPIO_BITBAND
 
 // Define probe switch input pin.
-#define PROBE_PORT              GPIOC
-#define PROBE_PIN               5
+#define PROBE_PORT              GPIOA
+#define PROBE_PIN               13
 
 // Spindle encoder pins.
 #if SPINDLE_SYNC_ENABLE
