@@ -5,7 +5,7 @@
  * @brief     Linker script for STM32F407VGTX Device from STM32F4 series
  *                      1024Kbytes FLASH
  *                      128Kbytes RAM
- *                      32Kbytes BootLoader
+ *                      48Kbytes BootLoader
  *
  *            Set heap size, stack size and stack location according
  *            to application requirements.
@@ -38,9 +38,8 @@ _Min_Stack_Size = 0x1000 ;	/* required amount of stack */
 MEMORY
 {
   RAM    (xrw)    : ORIGIN = 0x20000000,   LENGTH = 128K
-  BOOT_FLASH    (rx)    : ORIGIN = 0x8000000,   LENGTH = 32K
+  FLASH    (rx)    : ORIGIN = 0x800C000,   LENGTH = 1024K - 48K - 128K
   EEPROM_EMUL(xrw)      : ORIGIN = 0x80E0000,   LENGTH = 128K
-  FLASH    (rx)    : ORIGIN = 0x8008000,   LENGTH = 1024K - 32K - 128K
 }
 
 _FLASH_VectorTable = ORIGIN(FLASH);

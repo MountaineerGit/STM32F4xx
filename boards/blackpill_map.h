@@ -5,18 +5,18 @@
 
   Copyright (c) 2021 rvalotta
 
-  Grbl is free software: you can redistribute it and/or modify
+  GrblHAL is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
 
-  Grbl is distributed in the hope that it will be useful,
+  GrblHAL is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
+  along with GrblHAL. If not, see <http://www.gnu.org/licenses/>.
 */
 
 /* Pin Assignments:
@@ -50,8 +50,6 @@
 #endif
 
 #define BOARD_NAME "BlackPill"
-//#undef SPINDLE_SYNC_ENABLE
-//#define SPINDLE_SYNC_ENABLE 1
 
 // Define step pulse output pins.
 #define STEP_PORT               GPIOA
@@ -91,15 +89,26 @@
 #endif
 #endif
 
-  // Define spindle enable and spindle direction output pins.
-#define SPINDLE_ENABLE_PORT     GPIOB
-#define SPINDLE_ENABLE_PIN      1
-#define SPINDLE_DIRECTION_PORT  GPIOB
-#define SPINDLE_DIRECTION_PIN   2
+#define AUXOUTPUT2_PORT         GPIOA // Spindle PWM
+#define AUXOUTPUT2_PIN          8
+#define AUXOUTPUT3_PORT         GPIOB // Spindle direction
+#define AUXOUTPUT3_PIN          2
+#define AUXOUTPUT4_PORT         GPIOB // Spindle enable
+#define AUXOUTPUT4_PIN          1
 
-// Define spindle PWM output pin.
-#define SPINDLE_PWM_PORT_BASE   GPIOA_BASE
-#define SPINDLE_PWM_PIN         8
+// Define driver spindle pins
+#if DRIVER_SPINDLE_ENABLE
+#define SPINDLE_ENABLE_PORT     AUXOUTPUT4_PORT
+#define SPINDLE_ENABLE_PIN      AUXOUTPUT4_PIN
+#if DRIVER_SPINDLE_PWM_ENABLE
+#define SPINDLE_PWM_PORT        AUXOUTPUT2_PORT
+#define SPINDLE_PWM_PIN         AUXOUTPUT2_PIN
+#endif
+#if DRIVER_SPINDLE_DIR_ENABLE
+#define SPINDLE_DIRECTION_PORT  AUXOUTPUT3_PORT
+#define SPINDLE_DIRECTION_PIN   AUXOUTPUT3_PIN
+#endif
+#endif //DRIVER_SPINDLE_ENABLE
 
 // Define flood and mist coolant enable output pins.
 #define COOLANT_FLOOD_PORT      GPIOC
@@ -112,19 +121,10 @@
 #define RESET_PIN               6
 #define FEED_HOLD_PIN           7
 #define CYCLE_START_PIN         8
-#if SAFETY_DOOR_ENABLE
-#define SAFETY_DOOR_PIN         9
-#endif
 #define CONTROL_INMODE          GPIO_SHIFT6
 
-// Define probe switch input pin.
-#if !N_AUTO_SQUARED
-#define PROBE_PORT              GPIOB
-#define PROBE_PIN               15
-#endif
-
 // Spindle encoder pins.
-#if SPINDLE_SYNC_ENABLE
+#if SPINDLE_ENCODER_ENABLE
 
 #define RPM_COUNTER_N           2
 #define RPM_TIMER_N             3
@@ -135,25 +135,35 @@
 
 #endif
 
-#if N_ABC_MOTORS == 0
-#define HAS_IOPORTS
-#if !SAFETY_DOOR_ENABLE
 #define AUXINPUT0_PORT          GPIOB
 #define AUXINPUT0_PIN           9
-#define AUXOUTPUT1_PORT         GPIOA
-#define AUXOUTPUT1_PIN          6
-#else
-#define AUXINPUT0_PORT          GPIOA
-#define AUXINPUT0_PIN           6
-#endif
-#define AUXOUTPUT0_PORT         GPIOA
-#define AUXOUTPUT0_PIN          7
+#if !N_AUTO_SQUARED
+#define AUXINPUT1_PORT          GPIOB // Probe input
+#define AUXINPUT1_PIN           15
 #endif
 
-// NOT SUPPORTED
-#if KEYPAD_ENABLE
-#error Keypad not supported
+#if N_ABC_MOTORS == 0
+#define AUXOUTPUT0_PORT         GPIOA
+#define AUXOUTPUT0_PIN          7
+#define AUXOUTPUT1_PORT         GPIOA
+#define AUXOUTPUT1_PIN          6
 #endif
+
+#if PROBE_ENABLE && defined(AUXINPUT1_PIN)
+#define PROBE_PORT              AUXINPUT1_PORT
+#define PROBE_PIN               AUXINPUT1_PIN
+#endif
+
+#if SAFETY_DOOR_ENABLE
+#define SAFETY_DOOR_PORT        AUXINPUT0_PORT
+#define SAFETY_DOOR_PIN         AUXINPUT0_PIN
+#endif
+
+#if MOTOR_FAULT_ENABLE
+#define MOTOR_FAULT_PORT        AUXINPUT0_PORT
+#define MOTOR_FAULT_PIN         AUXINPUT0_PIN
+#endif
+
 // NOT SUPPORTED
 #if SDCARD_ENABLE
 //#error SDcard not supported
