@@ -72,7 +72,7 @@
 #define DIRECTION_PORT          GPIOA
 #define X_DIRECTION_PIN         1
 #define Y_DIRECTION_PIN         3
-#define Z_DIRECTION_PIN         7
+#define Z_DIRECTION_PIN         2
 #if N_GANGED
 #define DIRECTION_OUTMODE       GPIO_BITBAND
 #else
@@ -103,7 +103,7 @@
 #define M3_STEP_PORT            GPIOE
 #define M3_STEP_PIN             13
 #define M3_DIRECTION_PORT       GPIOA
-#define M3_DIRECTION_PIN        5
+#define M3_DIRECTION_PIN        0
 #define M3_LIMIT_PORT           GPIOC
 #define M3_LIMIT_PIN            7
 #define M3_ENABLE_PORT          GPIOB
@@ -113,7 +113,7 @@
 #define AUXOUTPUT2_PORT         GPIOE // Spindle PWM
 #define AUXOUTPUT2_PIN          5
 #define AUXOUTPUT3_PORT         GPIOB // Spindle direction
-#define AUXOUTPUT3_PIN          5
+#define AUXOUTPUT3_PIN          0
 #define AUXOUTPUT4_PORT         GPIOE // Spindle enable
 #define AUXOUTPUT4_PIN          2
 
@@ -148,8 +148,14 @@
 #define CONTROL_INMODE          GPIO_BITBAND
 
 // Define probe switch input pin.
-#define PROBE_PORT              GPIOA
-#define PROBE_PIN               8
+#define AUXINPUT1_PORT          GPIOA // Probe input
+#define AUXINPUT1_PIN           8
+
+#if PROBE_ENABLE && defined(AUXINPUT1_PIN)
+# define PROBE_PORT              AUXINPUT1_PORT
+# define PROBE_PIN               AUXINPUT1_PIN
+#endif
+
 
 // Spindle encoder pins.
 #if SPINDLE_SYNC_ENABLE
