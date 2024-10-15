@@ -36,6 +36,7 @@
 //#define BOARD_BTT_SKR_PRO_1_2     // F407 based 3D Printer board
 //#define BOARD_BTT_SKR_20          // F407 based 3D Printer board
 //#define BOARD_BTT_SKR_20_DAC      // F407 based 3D Printer board, uses analog output (DAC) for spindle speed control
+//#define BOARD_STM32F407VET6_DEV   // F407 based industrial control board
 //#define BOARD_FYSETC_S6           // F446 based 3D Printer board
 //#define BOARD_FLEXI_HAL           // F446 CNC board
 //#define BOARD_LONGBOARD32         // F412 Sienci SLB
@@ -75,6 +76,7 @@
 //#define SPINDLE0_ENABLE      SPINDLE_PWM0_NODIR
 //#define SPINDLE2_ENABLE      SPINDLE_NONE
 //#define SPINDLE3_ENABLE      SPINDLE_NONE
+//#define SPINDLE_OFFSET       1 // Uncomment to enable settings for laser spindle XY-offset.
 // **********************
 //#define MODBUS_ENABLE        1 // Set to 1 for auto direction, 2 for direction signal on auxillary output pin.
 //#define _WIZCHIP_         5500 // Enables ethernet via WIZnet breakout connected via SPI. Set to 5500 for W5500 chip, 5105 for W5100S.
@@ -82,12 +84,11 @@
                                  // NOTE: Only fully compatible with F412 and F429 MCUs.
 //#define WEBUI_AUTH_ENABLE    1 // Enable ESP3D-WEBUI authentication.
 //#define SDCARD_ENABLE        1 // Run gcode programs from SD card. Set to 2 to enable YModem upload.
-//#define MPG_ENABLE           1 // Enable MPG interface. Requires a serial port and means to switch between normal and MPG mode.
-                                 // 1: Mode switching is by handshake pin input unless the keypad plugin is enabled in mode 2 which
-                                 //    uses mode switching by the CMD_MPG_MODE_TOGGLE (0x8B) command character.
-                                 // 2: Mode switching is by the CMD_MPG_MODE_TOGGLE command character. The keypad plugin is not required.
+//#define MPG_ENABLE           1 // Enable MPG interface. Requires a serial stream and means to switch between normal and MPG mode.
+                                 // 1: Mode switching is by handshake pin.
+                                 // 2: Mode switching is by the CMD_MPG_MODE_TOGGLE (0x8B) command character.
 //#define KEYPAD_ENABLE        1 // 1: uses a I2C keypad for input.
-                                 // 2: uses a serial port for input. If MPG_ENABLE is set to 1 the serial stream is shared with the MPG.
+                                 // 2: uses a serial stream for input. If MPG_ENABLE is set > 0 the serial stream is shared with the MPG.
 //#define DISPLAY_ENABLE       1 // Set to 1 for I2C display protocol, 2 for I2C LED protocol.
 //#define MACROS_ENABLE        1 // Macros plugin. For macros that can be triggered by keypad plugin or auxillary inputs.
                                  // Set to 1 for aux input triggers, 2 for keypad triggers or 3 for both.
@@ -112,6 +113,10 @@
 //#define ESTOP_ENABLE         0 // When enabled only real-time report requests will be executed when the reset pin is asserted.
                                  // Note: if left commented out the default setting is determined from COMPATIBILITY_LEVEL.
 //#define MCP3221_ENABLE    0x4D // Enable MCP3221 I2C ADC input with address 0x4D (0b01001101).
+//#define RGB_LED_ENABLE       2 // Set to 1 to enable strip length settings $536 and $537, set to 2 to also enable M150 LED strip control.
+//#define PWM_SERVO_ENABLE     1 // Enable PWM servo support, requires at least one PWM capable auxillary output.
+//#define BLTOUCH_ENABLE       1 // Enable BLTouch support. Requires and claims one PWM servo output.
+//#define EVENTOUT_ENABLE      1 // Enable binding events (triggers) to control auxillary outputs.
 
 // Optional control signals:
 // These will be assigned to aux input pins. Use the $pins command to check which pins are assigned.
