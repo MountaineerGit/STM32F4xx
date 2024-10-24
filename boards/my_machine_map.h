@@ -44,8 +44,8 @@
 
 #define I2C_ENABLE      1
 #define I2C_PORT        1
-#define EEPROM_ENABLE   1
-#define EEPROM_IS_FRAM  1
+#define EEPROM_ENABLE   0
+//#define EEPROM_IS_FRAM  1
 //#define SPINDLE_SYNC_ENABLE 1
 
 //#define IS_NUCLEO_BOB
