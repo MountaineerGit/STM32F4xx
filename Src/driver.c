@@ -31,7 +31,9 @@
 #include "serial.h"
 
 #define AUX_DEVICES // until all drivers are converted?
-#define AUX_CONTROLS_OUT
+#ifndef AUX_CONTROLS
+#define AUX_CONTROLS (AUX_CONTROL_SPINDLE|AUX_CONTROL_COOLANT)
+#endif
 
 #include "grbl/protocol.h"
 #include "grbl/motor_pins.h"
@@ -401,11 +403,13 @@ static output_signal_t outputpin[] = {
 #ifdef MOTOR_UARTM5_PIN
     { .id = Bidirectional_MotorUARTM5,  .port = MOTOR_UARTM5_PORT,  .pin = MOTOR_UARTM5_PIN,        .group = PinGroup_MotorUART },
 #endif
+#if !(AUX_CONTROLS & AUX_CONTROL_COOLANT)
 #ifdef COOLANT_FLOOD_PIN
     { .id = Output_CoolantFlood,    .port = COOLANT_FLOOD_PORT,     .pin = COOLANT_FLOOD_PIN,       .group = PinGroup_Coolant },
 #endif
-#ifdef COOLANT_MIST_PIN
+#ifdef COOLANT_MIST_PORT
     { .id = Output_CoolantMist,     .port = COOLANT_MIST_PORT,      .pin = COOLANT_MIST_PIN,        .group = PinGroup_Coolant },
+#endif
 #endif
 #ifdef FLASH_CS_PORT
     { .id = Output_FlashCS,         .port = FLASH_CS_PORT,          .pin = FLASH_CS_PIN,            .group = PinGroup_SPI },
@@ -472,6 +476,18 @@ static output_signal_t outputpin[] = {
 #endif
 #ifdef AUXOUTPUT11_PORT
     { .id = Output_Aux11,           .port = AUXOUTPUT11_PORT,       .pin = AUXOUTPUT11_PIN,         .group = PinGroup_AuxOutput },
+#endif
+#ifdef AUXOUTPUT12_PORT
+    { .id = Output_Aux12,           .port = AUXOUTPUT12_PORT,       .pin = AUXOUTPUT12_PIN,         .group = PinGroup_AuxOutput },
+#endif
+#ifdef AUXOUTPUT13_PORT
+    { .id = Output_Aux13,           .port = AUXOUTPUT13_PORT,       .pin = AUXOUTPUT13_PIN,         .group = PinGroup_AuxOutput },
+#endif
+#ifdef AUXOUTPUT14_PORT
+    { .id = Output_Aux14,           .port = AUXOUTPUT14_PORT,       .pin = AUXOUTPUT14_PIN,         .group = PinGroup_AuxOutput },
+#endif
+#ifdef AUXOUTPUT15_PORT
+    { .id = Output_Aux15,           .port = AUXOUTPUT15_PORT,       .pin = AUXOUTPUT15_PIN,         .group = PinGroup_AuxOutput },
 #endif
 #ifdef AUXOUTPUT0_ANALOG_PORT
     { .id = Output_Analog_Aux0,     .port = AUXOUTPUT0_ANALOG_PORT, .pin = AUXOUTPUT0_ANALOG_PIN,   .group = PinGroup_AuxOutputAnalog },
@@ -1520,8 +1536,6 @@ inline static home_signals_t homeGetState (void)
     signals.a.mask = settings.home_invert.mask;
 #endif
 
-    hal.homing.get_state = NULL;
-
 #if HOME_INMODE == GPIO_BITBAND
     signals.a.x = DIGITAL_IN(X_HOME_PORT, X_HOME_PIN);
     signals.a.y = DIGITAL_IN(Y_HOME_PORT, Y_HOME_PIN);
@@ -1894,8 +1908,10 @@ static void onSpindleProgrammed (spindle_ptrs_t *spindle, spindle_state_t state,
 // Start/stop coolant (and mist if enabled)
 static void coolantSetState (coolant_state_t mode)
 {
-    mode.value ^= settings.coolant_invert.mask;
+    mode.value ^= settings.coolant.invert.mask;
+#ifdef COOLANT_FLOOD_PIN
     DIGITAL_OUT(COOLANT_FLOOD_PORT, COOLANT_FLOOD_PIN, mode.flood);
+#endif
 #ifdef COOLANT_MIST_PIN
     DIGITAL_OUT(COOLANT_MIST_PORT, COOLANT_MIST_PIN, mode.mist);
 #endif
@@ -1904,13 +1920,15 @@ static void coolantSetState (coolant_state_t mode)
 // Returns coolant state in a coolant_state_t variable
 static coolant_state_t coolantGetState (void)
 {
-    coolant_state_t state = (coolant_state_t){settings.coolant_invert.mask};
+    coolant_state_t state = { .mask = settings.coolant.invert.mask };
 
+#ifdef COOLANT_FLOOD_PIN
     state.flood = DIGITAL_IN(COOLANT_FLOOD_PORT, COOLANT_FLOOD_PIN);
-#ifdef COOLANT_MIST_PIN
-    state.mist  = DIGITAL_IN(COOLANT_MIST_PORT, COOLANT_MIST_PIN);
 #endif
-    state.value ^= settings.coolant_invert.mask;
+#ifdef COOLANT_MIST_PIN
+    state.mist = DIGITAL_IN(COOLANT_MIST_PORT, COOLANT_MIST_PIN);
+#endif
+    state.value ^= settings.coolant.invert.mask;
 
     return state;
 }
@@ -2792,7 +2810,7 @@ static bool driver_setup (settings_t *settings)
 
 #endif // SPINDLE_ENCODER_ENABLE
 
-    IOInitDone = settings->version == 22;
+    IOInitDone = settings->version.id == 23;
 
     hal.settings_changed(settings, (settings_changed_flags_t){0});
 
@@ -2810,8 +2828,6 @@ static bool driver_setup (settings_t *settings)
 
 #if RTC_ENABLE
 
-static bool rtc_started = false;
-
 static RTC_HandleTypeDef hrtc = {
     .Instance = RTC,
     .Init.HourFormat = RTC_HOURFORMAT_24,
@@ -2827,43 +2843,27 @@ static bool set_rtc_time (struct tm *time)
     RTC_TimeTypeDef sTime = {0};
     RTC_DateTypeDef sDate = {0};
 
-    if(!rtc_started) {
-
-        RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {
-            .PeriphClockSelection = RCC_PERIPHCLK_RTC,
-            .RTCClockSelection = RCC_RTCCLKSOURCE_LSE
-        };
-
-        if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) == HAL_OK) {
-            __HAL_RCC_RTC_ENABLE();
-            rtc_started = HAL_RTC_Init(&hrtc) == HAL_OK;
-        }
+    sTime.Hours = time->tm_hour;
+    sTime.Minutes = time->tm_min;
+    sTime.Seconds = time->tm_sec;
+    sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
+    sTime.StoreOperation = RTC_STOREOPERATION_RESET;
+    if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) == HAL_OK) {
+        sDate.WeekDay = RTC_WEEKDAY_MONDAY;
+        sDate.Month = time->tm_mon + 1;
+        sDate.Date = time->tm_mday;
+        sDate.Year = time->tm_year - 100;
+        hal.driver_cap.rtc_set = (HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN) == HAL_OK);
     }
 
-    if(rtc_started) {
-
-        sTime.Hours = time->tm_hour;
-        sTime.Minutes = time->tm_min;
-        sTime.Seconds = time->tm_sec;
-        sTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
-        sTime.StoreOperation = RTC_STOREOPERATION_RESET;
-        if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BIN) == HAL_OK) {
-            sDate.WeekDay = RTC_WEEKDAY_MONDAY;
-            sDate.Month = time->tm_mon + 1;
-            sDate.Date = time->tm_mday;
-            sDate.Year = time->tm_year - 100;
-            HAL_RTC_SetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
-        }
-    }
-
-    return rtc_started;
+    return hal.driver_cap.rtc_set;
 }
 
 static bool get_rtc_time (struct tm *time)
 {
     bool ok = false;
 
-    if(rtc_started) {
+    if(hal.driver_cap.rtc_set) {
 
         RTC_TimeTypeDef sTime = {0};
         RTC_DateTypeDef sDate = {0};
@@ -2914,29 +2914,35 @@ static status_code_t enter_dfu (sys_state_t state, char *args)
     return Status_OK;
 }
 
-const sys_command_t boot_command_list[] = {
-    {"DFU", enter_dfu, { .noargs = On }, { .str = "enter DFU bootloader" } }
-};
-
-static sys_commands_t boot_commands = {
-    .n_commands = sizeof(boot_command_list) / sizeof(sys_command_t),
-    .commands = boot_command_list
-};
-
 static void onReportOptions (bool newopt)
 {
     if(!newopt)
         hal.stream.write("[PLUGIN:Bootloader Entry v0.02]" ASCII_EOL);
 }
 
-#endif
+#if COPROC_PASSTHRU
+
+#include "grbl/stream_passthru.h"
+
+void stream_passthru_enter (void)
+{
+    extern uint8_t _estack; /* Symbol defined in the linker script */
+
+    uint32_t *addr = (uint32_t *)(((uint32_t)&_estack - 1) & 0xFFFFFE00);
+
+    __disable_irq();
+    *addr = 0xDEADBEAD;
+
+//    SCB_CleanDCache();
+    NVIC_SystemReset();
+}
+
+#endif // COPROC_PASSTHRU
+
+#endif // USB_SERIAL_CDC
 
 // Initialize HAL pointers, setup serial comms and enable EEPROM
 // NOTE: grblHAL is not yet configured (from EEPROM data), driver_setup() will be called when done
-
-#if DRIVER_SPINDLE_ENABLE || DRIVER_SPINDLE1_ENABLE
-extern bool aux_out_claim_explicit (aux_ctrl_out_t *aux_ctrl);
-#endif
 
 bool driver_init (void)
 {
@@ -2983,7 +2989,7 @@ bool driver_init (void)
 #else
     hal.info = "STM32F401";
 #endif
-    hal.driver_version = "241017";
+    hal.driver_version = "241221";
     hal.driver_url = GRBL_URL "/STM32F4xx";
 #ifdef BOARD_NAME
     hal.board = BOARD_NAME;
@@ -3046,8 +3052,30 @@ bool driver_init (void)
     hal.periph_port.set_pin_description = setPeriphPinDescription;
 
 #if RTC_ENABLE
-    hal.rtc.get_datetime = get_rtc_time;
-    hal.rtc.set_datetime = set_rtc_time;
+
+    RCC_OscInitTypeDef OscInitStruct;
+
+    HAL_RCC_GetOscConfig(&OscInitStruct);
+
+    if(OscInitStruct.OscillatorType & (RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_LSE)) {
+
+        RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {
+            .PeriphClockSelection = RCC_PERIPHCLK_RTC,
+            .RTCClockSelection = (OscInitStruct.OscillatorType & RCC_OSCILLATORTYPE_LSI) ? RCC_RTCCLKSOURCE_LSI : RCC_RTCCLKSOURCE_LSE
+        };
+
+        if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) == HAL_OK) {
+
+            __HAL_RCC_RTC_ENABLE();
+
+            if((hal.driver_cap.rtc = HAL_RTC_Init(&hrtc) == HAL_OK)) {
+                hal.rtc.get_datetime = get_rtc_time;
+                hal.rtc.set_datetime = set_rtc_time;
+                // TODO: read the time and set hal.driver_cap.rtc_set if >= core build date?
+            }
+        }
+    }
+
 #endif
 
     serialRegisterStreams();
@@ -3111,12 +3139,7 @@ bool driver_init (void)
 #if SPINDLE_SYNC_ENABLE
     hal.driver_cap.spindle_sync = On;
 #endif
-#ifdef COOLANT_FLOOD_PIN
-    hal.coolant_cap.flood = On;
-#endif
-#ifdef COOLANT_MIST_PIN
-    hal.coolant_cap.mist = On;
-#endif
+    hal.coolant_cap.bits = COOLANT_ENABLE;
     hal.driver_cap.software_debounce = On;
     hal.driver_cap.step_pulse_delay = On;
     hal.driver_cap.amass_level = 3;
@@ -3203,11 +3226,10 @@ bool driver_init (void)
     aux_ctrl_claim_ports(aux_claim_explicit, NULL);
 #endif
 
-#if DRIVER_SPINDLE_ENABLE || DRIVER_SPINDLE1_ENABLE
+   extern bool aux_out_claim_explicit (aux_ctrl_out_t *aux_ctrl);
    aux_ctrl_claim_out_ports(aux_out_claim_explicit, NULL);
-#endif
 
-#if DRIVER_SPINDLE_ENABLE ||  DRIVER_SPINDLE1_ENABLE
+#if DRIVER_SPINDLE_ENABLE || DRIVER_SPINDLE1_ENABLE
     extern void driver_spindles_init (void);
     driver_spindles_init();
 #endif
@@ -3221,12 +3243,46 @@ bool driver_init (void)
 
 #if USB_SERIAL_CDC
 
-    // register $DFU bootloader command
+    static const sys_command_t boot_command_list[] = {
+        {"DFU", enter_dfu, { .noargs = On }, { .str = "enter DFU bootloader" } }
+    };
+
+    static sys_commands_t boot_commands = {
+        .n_commands = sizeof(boot_command_list) / sizeof(sys_command_t),
+        .commands = boot_command_list
+    };
 
     grbl.on_report_options = onReportOptions;
 
     system_register_commands(&boot_commands);
 
+#if COPROC_PASSTHRU
+
+    extern uint8_t _estack; /* Symbol defined in the linker script */
+
+    bool enterpt;
+    uint32_t *addr = (uint32_t *)(((uint32_t)&_estack - 1) & 0xFFFFFE00);
+
+    if((enterpt = *addr == 0xDEADBEAD)) {
+        *addr = 0x0;
+        // Reduce USB IRQ priority to lower than the UART port!
+        HAL_NVIC_DisableIRQ(OTG_HS_IRQn);
+        HAL_NVIC_SetPriority(OTG_HS_IRQn, 1, 0);
+        HAL_NVIC_EnableIRQ(OTG_HS_IRQn);
+    }
+
+    stream_passthru_init(COPROC_STREAM, 115200, enterpt);
+
+#endif // COPROC_PASSTHRU
+
+#endif // USB_SERIAL_CDC
+
+#if TRINAMIC_SPI_ENABLE
+    extern void tmc_spi_init (void);
+    tmc_spi_init();
+#elif TRINAMIC_UART_ENABLE
+    extern void tmc_uart_init (void);
+    tmc_uart_init();
 #endif
 
 #ifdef HAS_BOARD_INIT
@@ -3279,19 +3335,8 @@ void STEPPER_TIMER_IRQHandler (void)
    finish, if stepper driver interrupts is disabled after completing a move.
    NOTE: Interrupt collisions between the serial and stepper interrupts can cause delays by
    a few microseconds, if they execute right before one another. Not a big deal, but can
-   cause issues at high step rates if another high frequency asynchronous interrupt is
-   added to Grbl.
+   cause issues at high step rates if another high frequency asynchronous interrupt is added.
 */
-
-// This interrupt is used only when STEP_PULSE_DELAY is enabled. Here, the step pulse is
-// initiated after the STEP_PULSE_DELAY time period has elapsed. The ISR TIMER2_OVF interrupt
-// will then trigger after the appropriate settings.pulse_microseconds, as in normal operation.
-// The new timing between direction, step pulse, and step complete events are setup in the
-// st_wake_up() routine.
-
-// This interrupt is enabled when Grbl sets the motor port bits to execute
-// a step. This ISR resets the motor port after a short period (settings.pulse_microseconds)
-// completing one step cycle.
 void PULSE_TIMER_IRQHandler (void)
 {
     uint32_t irq = PULSE_TIMER->SR & PULSE_TIMER->DIER;

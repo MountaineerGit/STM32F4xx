@@ -19,6 +19,8 @@
   along with grblHAL. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define AUX_CONTROLS (AUX_CONTROL_SPINDLE|AUX_CONTROL_COOLANT|AUX_CONTROL_DEVICES)
+
 #if N_ABC_MOTORS > 2
 #error "Axis configuration is not supported!"
 #endif
@@ -31,7 +33,7 @@
 #define BOARD_NAME "SuperLongBoard"
 #endif
 
-#if SLB_EEPROM_ENABLE
+#if EEPROM_ENABLE || SLB_EEPROM_ENABLE
 #undef I2C_ENABLE
 #undef EEPROM_ENABLE
 #define I2C_ENABLE 1
@@ -183,42 +185,54 @@
 #define AUXOUTPUT10_PIN         8
 #define AUXOUTPUT11_PORT        GPIOB // Spindle 1 direction
 #define AUXOUTPUT11_PIN         1
+#define AUXOUTPUT12_PORT        GPIOB // Coolant flood
+#define AUXOUTPUT12_PIN         14
+#define AUXOUTPUT13_PORT        GPIOB // Coolant mist
+#define AUXOUTPUT13_PIN         4
 
-#if DRIVER_SPINDLE_ENABLE
-#define SPINDLE_ENABLE_PORT     AUXOUTPUT2_PORT
-#define SPINDLE_ENABLE_PIN      AUXOUTPUT2_PIN
+#define EVENTOUT_1_ACTION       1
+#define EVENTOUT_2_ACTION       4
+#define EVENTOUT_3_ACTION       1
+#define EVENTOUT_4_ACTION       4
+
+#if DRIVER_SPINDLE_ENABLE & SPINDLE_ENA
+#define SPINDLE_ENABLE_PORT     AUXOUTPUT9_PORT
+#define SPINDLE_ENABLE_PIN      AUXOUTPUT9_PIN
 #endif
-#if DRIVER_SPINDLE_PWM_ENABLE
+#if DRIVER_SPINDLE_ENABLE & SPINDLE_PWM
 #define SPINDLE_PWM_PORT        AUXOUTPUT10_PORT
 #define SPINDLE_PWM_PIN         AUXOUTPUT10_PIN
 #endif
-#if DRIVER_SPINDLE_DIR_ENABLE
+#if DRIVER_SPINDLE_ENABLE & SPINDLE_DIR
 #define SPINDLE_DIRECTION_PORT  AUXOUTPUT11_PORT
 #define SPINDLE_DIRECTION_PIN   AUXOUTPUT11_PIN
 #endif
 
-#if DRIVER_SPINDLE1_ENABLE
+#if DRIVER_SPINDLE1_ENABLE & SPINDLE_ENA
 #define SPINDLE1_ENABLE_PORT    AUXOUTPUT7_PORT
 #define SPINDLE1_ENABLE_PIN     AUXOUTPUT7_PIN
 #endif
-#if DRIVER_SPINDLE1_PWM_ENABLE
+#if DRIVER_SPINDLE1_ENABLE & SPINDLE_PWM
 #define SPINDLE1_PWM_PORT       AUXOUTPUT8_PORT
 #define SPINDLE1_PWM_PIN        AUXOUTPUT8_PIN
 #endif
 
 // Define flood and mist coolant enable output pins.
-#define COOLANT_FLOOD_PORT      GPIOB
-#define COOLANT_FLOOD_PIN       14
-#define COOLANT_MIST_PORT       GPIOB
-#define COOLANT_MIST_PIN        4
-#define COOLANT_OUTMODE         GPIO_BITBAND
+#if COOLANT_ENABLE & COOLANT_FLOOD
+#define COOLANT_FLOOD_PORT      AUXOUTPUT12_PORT
+#define COOLANT_FLOOD_PIN       AUXOUTPUT12_PIN
+#endif
+#if COOLANT_ENABLE & COOLANT_MIST
+#define COOLANT_MIST_PORT       AUXOUTPUT13_PORT
+#define COOLANT_MIST_PIN        AUXOUTPUT13_PIN
+#endif
 
 #define MODBUS_DIR_AUX          4
 
 #define NEOPIXEL_GPO
 #define LED_PORT                GPIOC // rail LED strip
 #define LED_PIN                 9
-#ifdef DEBUG
+#if !defined(DEBUG) && RGB_LED_ENABLE
 #define LED1_PORT               GPIOA // ring LED strip, when enabled SWD debugging is blocked (use $DFU to reenable)
 #define LED1_PIN                13
 #endif
@@ -239,14 +253,17 @@
 #define AUXINPUT4_PORT          GPIOE // MACRO1
 #define AUXINPUT4_PIN           1
 #define MACRO_1_AUXIN           4
+#define MACRO_1_BUTTONACTION    1
 
 #define AUXINPUT5_PORT          GPIOE // MACRO2
 #define AUXINPUT5_PIN           0
 #define MACRO_2_AUXIN           5
+#define MACRO_2_BUTTONACTION    2
 
 #define AUXINPUT6_PORT          GPIOC // CYC/ST, MACRO3
 #define AUXINPUT6_PIN           11
 #define MACRO_3_AUXIN           6
+#define MACRO_3_BUTTONACTION    4
 
 #define AUXINPUT7_PORT          GPIOD // AUX_IN_3
 #define AUXINPUT7_PIN           15
